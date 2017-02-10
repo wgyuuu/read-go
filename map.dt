@@ -1,0 +1,20 @@
+// 源文件：runtime/hashmap.go
+
+If both key and value do not contain pointers and are inline, then we mark bucket
+type as containing no pointers. This avoids scanning such maps。
+如果key和value里都不包含指针&是简单结构体，在gc的时候就作为一个整体的map对象，不比仔细检查。
+
+However, bmap.overflow is a pointer. In order to keep overflow buckets
+alive, we store pointers to all overflow buckets in hmap.overflow.
+ Overflow is used only if key and value do not contain pointers.
+overflow 存那些被暂时废弃掉的桶数据（bmap+数据，backet），为了不被gc。
+
+采用hash+list的方式，h.B 低位为一个hash数组，高位用bucket桶 list存(一个连续地址块)。
+
+bucket的结构：
+最上层是一个bmap结构体，里面有该bucket的每个数据的高位key，用来找到数据落地到哪了，然后通过地址偏移找到目标。
+然后是所有的Key的存储。
+下面跟着Value的存储。
+最后面是next，指向下一个bucket。
+
+据说，go的map老backet的数据不会直接同步到新的backet上，而是在删除，修改的时候同步过去。
